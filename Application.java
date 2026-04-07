@@ -1,42 +1,52 @@
 package models;
 
 public class Application {
-    private int id;
-    private String name;
-    private String background;
-    private String rank;
-    private String submissionDate;
-    private String status;
+
+    private final int    ID;
+    private final String NAME;
+    private final String BACKGROUND;
+    private final String RANK;
+    private final String SUBMISSION_DATE;
+    private       String status;  
+
 
     public Application(int id, String name, String background, String rank,
                        String submissionDate, String status) {
-        this.id = id;
-        this.name = name;
-        this.background = background;
-        this.rank = rank;
-        this.submissionDate = submissionDate;
-        this.status = status;
+        this.ID              = id;
+        this.NAME            = name;
+        this.BACKGROUND      = background;
+        this.RANK            = rank;
+        this.SUBMISSION_DATE = submissionDate;
+        this.status          = status;
     }
+
 
     public Application(String name, String background, String rank, String submissionDate) {
-        this.name = name;
-        this.background = background;
-        this.rank = rank;
-        this.submissionDate = submissionDate;
-        this.status = "PENDING";
+        this.ID              = 0;
+        this.NAME            = name;
+        this.BACKGROUND      = background;
+        this.RANK            = rank;
+        this.SUBMISSION_DATE = submissionDate;
+        this.status          = "PENDING";
     }
 
-    public int    getId()             { return id; }
-    public String getName()           { return name; }
-    public String getBackground()     { return background; }
-    public String getRank()           { return rank; }
-    public String getSubmissionDate() { return submissionDate; }
+
+    public int    getId()             { return ID; }
+    public String getName()           { return NAME; }
+    public String getBackground()     { return BACKGROUND; }
+    public String getRank()           { return RANK; }
+    public String getSubmissionDate() { return SUBMISSION_DATE; }
     public String getStatus()         { return status; }
-    public void   setStatus(String s) { this.status = s; }
+
+   
+    public void setStatus(String status) { this.status = status; }
 
     @Override
     public String toString() {
-        String bg = background.length() > 34 ? background.substring(0, 31) + "..." : background;
-        return String.format("%-25s %-35s %-8s %-12s %-10s", name, bg, rank, submissionDate, status);
+        String bg = BACKGROUND.length() > 34
+            ? BACKGROUND.substring(0, 31) + "..."
+            : BACKGROUND;
+        return String.format("%-25s %-35s %-8s %-12s %-10s",
+            NAME, bg, RANK, SUBMISSION_DATE, status);
     }
 }
