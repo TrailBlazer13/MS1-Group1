@@ -1,11 +1,11 @@
 package main;
 
-import database.DatabaseManager;
+import database.GuildDatabase;
 import ui.Menu;
 
 public class Main {
     public static void main(String[] args) {
-        DatabaseManager db = DatabaseManager.getInstance();
+        GuildDatabase db = GuildDatabase.getInstance();
         db.initializeDatabase();
         db.insertSampleData();
 
