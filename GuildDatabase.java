@@ -44,6 +44,17 @@ public class GuildDatabase {
             System.err.println("[ERROR] Cannot initialize — no database connection.");
             return;
         }
+        String createPayments =
+    "CREATE TABLE IF NOT EXISTS payments (" +
+    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+    "transaction_id TEXT NOT NULL UNIQUE," +
+    "category TEXT NOT NULL," +
+    "reference_id TEXT NOT NULL," +
+    "description TEXT NOT NULL," +
+    "amount REAL NOT NULL," +
+    "status TEXT NOT NULL," +
+    "payment_date TEXT NOT NULL" +
+    ")";
         String createApplications =
             "CREATE TABLE IF NOT EXISTS applications (" +
             "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -72,7 +83,8 @@ public class GuildDatabase {
             "progress INTEGER NOT NULL DEFAULT 0," +
             "assigned TEXT DEFAULT 'Unassigned'," +
             "deadline TEXT NOT NULL," +
-            "posted_date TEXT" +
+            "posted_date TEXT," +
+            "reward REAL NOT NULL DEFAULT 0.0" +    // NEW CODE
             ")";
         String createRoomRequests =
             "CREATE TABLE IF NOT EXISTS room_requests (" +
@@ -97,6 +109,7 @@ public class GuildDatabase {
             stmt.execute(createMissions);
             stmt.execute(createRoomRequests);
             stmt.execute(createRooms);
+            stmt.execute(createPayments);
             System.out.println("  [DB] Tables initialized successfully.");
         } catch (SQLException e) {
             System.err.println("[ERROR] Table creation failed: " + e.getMessage());
@@ -136,18 +149,20 @@ public class GuildDatabase {
         batchInsert(sql, data);
     }
 
-    private void insertSampleMissions() {
-        String sql = "INSERT OR IGNORE INTO missions (id, title, status, progress, assigned, deadline, posted_date) VALUES (?,?,?,?,?,?,?)";
-        Object[][] data = {
-            {"QST-01", "Retrieve the Dragon's Tear Crystal", "POSTED",    40,  "Aldric Stormforge, Lyria Emberveil", "2025-03-01", "2025-01-20"},
-            {"QST-02", "Eliminate the Bandit Chieftain",     "POSTED",    75,  "Brom Ironfist",                      "2025-02-25", "2025-01-22"},
-            {"QST-03", "Escort the Merchant Convoy",         "COMPLETED", 100, "Senna Nightveil, Vessa Coldwater",   "2025-02-10", "2025-01-15"},
-            {"QST-04", "Investigate the Haunted Watchtower", "PENDING",   0,   "Unassigned",                         "2025-03-15", null},
-            {"QST-05", "Gather Rare Moonpetal Herbs",        "UNPOSTED",  0,   "Unassigned",                         "2025-03-20", null},
-            {"QST-06", "Defend Millhaven from Goblin Raids", "FAILED",    30,  "Dunric Flamecrest",                  "2025-01-30", "2025-01-10"},
-        };
-        batchInsert(sql, data);
-    }
+private void insertSampleMissions() {
+    String sql = "INSERT OR IGNORE INTO missions " +
+                 "(id, title, status, progress, assigned, deadline, posted_date, reward) " +
+                 "VALUES (?,?,?,?,?,?,?,?)";
+    Object[][] data = {
+        {"QST-01", "Retrieve the Dragon's Tear Crystal", "POSTED",   40, "Aldric Stormforge, Lyria Emberveil", "2025-03-01", "2025-01-20", 500.00},
+        {"QST-02", "Eliminate the Bandit Chieftain",     "POSTED",   75, "Brom Ironfist",                      "2025-02-25", "2025-01-22", 300.00},
+        {"QST-03", "Escort the Merchant Convoy",         "COMPLETED",100, "Senna Nightveil, Vessa Coldwater",  "2025-02-10", "2025-01-15", 200.00},
+        {"QST-04", "Investigate the Haunted Watchtower", "PENDING",    0, "Unassigned",                        "2025-03-15", null,         150.00},
+        {"QST-05", "Gather Rare Moonpetal Herbs",        "UNPOSTED",   0, "Unassigned",                        "2025-03-20", null,         100.00},
+        {"QST-06", "Defend Millhaven from Goblin Raids", "FAILED",    30, "Dunric Flamecrest",                 "2025-01-30", "2025-01-10", 250.00},
+    };
+    batchInsert(sql, data);
+}
 
     private void insertSampleRooms() {
         String sql = "INSERT OR IGNORE INTO rooms (room_id, room_type, status, occupant, checkout_date) VALUES (?,?,?,?,?)";
@@ -482,12 +497,17 @@ public class GuildDatabase {
         }
     }
 
-    public boolean insertMission(String title, String deadline) {
+    public boolean insertMission(String title, String deadline, double reward) {   // MODIFIED CODE
+        if (reward <= 0) {
+            System.err.println("[ERROR] Mission reward must be greater than zero.");
+            return false;
+        }
         String id = generateMissionId();
         while (missionIdExists(id)) {
             id = "QST-" + String.format("%02d", new Random().nextInt(99) + 1);
         }
-        String sql = "INSERT INTO missions (id, title, status, progress, assigned, deadline) VALUES (?,?,?,?,?,?)";
+        String sql = "INSERT INTO missions (id, title, status, progress, assigned, deadline, reward) " +
+                     "VALUES (?,?,?,?,?,?,?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, id);
             ps.setString(2, title.trim());
@@ -495,6 +515,7 @@ public class GuildDatabase {
             ps.setInt(4, 0);
             ps.setString(5, "Unassigned");
             ps.setString(6, deadline.trim());
+            ps.setDouble(7, reward);              // NEW CODE
             ps.executeUpdate();
             return true;
         } catch (SQLException e) {
@@ -812,7 +833,8 @@ public class GuildDatabase {
             rs.getInt("progress"),
             rs.getString("assigned"),
             rs.getString("deadline"),
-            rs.getString("posted_date")
+            rs.getString("posted_date"),
+            rs.getDouble("reward")        // NEW CODE
         );
     }
 
@@ -835,5 +857,95 @@ public class GuildDatabase {
             rs.getString("check_out"),
             rs.getString("status")
         };
+    
+    }
+    //
+// ========================================================
+// PAYMENT QUERIES
+// ========================================================
+//
+ 
+public boolean insertPayment(String transactionId, String category,
+                              String referenceId, String description,
+                              double amount, String status) {
+    String sql = "INSERT OR IGNORE INTO payments " +
+                 "(transaction_id, category, reference_id, description, amount, status, payment_date) " +
+                 "VALUES (?,?,?,?,?,?,?)";
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setString(1, transactionId);
+        ps.setString(2, category.toUpperCase().trim());
+        ps.setString(3, referenceId.trim());
+        ps.setString(4, description.trim());
+        ps.setDouble(5, amount);
+        ps.setString(6, status.toUpperCase().trim());
+        ps.setString(7, java.time.LocalDate.now().toString());
+        ps.executeUpdate();
+        return true;
+    } catch (SQLException e) {
+        System.err.println("[ERROR] Inserting payment record: " + e.getMessage());
+        return false;
     }
 }
+ 
+public List<Object[]> getAllPayments() {
+    List<Object[]> list = new ArrayList<>();
+    String sql = "SELECT * FROM payments ORDER BY payment_date DESC";
+    try (PreparedStatement ps = conn.prepareStatement(sql);
+         ResultSet rs = ps.executeQuery()) {
+        while (rs.next()) {
+            list.add(new Object[]{
+                rs.getInt("id"),
+                rs.getString("transaction_id"),
+                rs.getString("category"),
+                rs.getString("reference_id"),
+                rs.getString("description"),
+                rs.getDouble("amount"),
+                rs.getString("status"),
+                rs.getString("payment_date")
+            });
+        }
+    } catch (SQLException e) {
+        System.err.println("[ERROR] Fetching payments: " + e.getMessage());
+    }
+    return list;
+}
+ 
+public List<Object[]> getPaymentsByCategory(String category) {
+    List<Object[]> list = new ArrayList<>();
+    String sql = "SELECT * FROM payments WHERE UPPER(category) = UPPER(?) ORDER BY payment_date DESC";
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setString(1, category);
+        ResultSet rs = ps.executeQuery();
+        while (rs.next()) {
+            list.add(new Object[]{
+                rs.getInt("id"),
+                rs.getString("transaction_id"),
+                rs.getString("category"),
+                rs.getString("reference_id"),
+                rs.getString("description"),
+                rs.getDouble("amount"),
+                rs.getString("status"),
+                rs.getString("payment_date")
+            });
+        }
+    } catch (SQLException e) {
+        System.err.println("[ERROR] Fetching payments by category: " + e.getMessage());
+    }
+    return list;
+}
+// clear old sample
+public void clearSampleData() {
+    try (Statement stmt = conn.createStatement()) {
+        stmt.execute("DELETE FROM missions");
+        stmt.execute("DELETE FROM adventurers");
+        stmt.execute("DELETE FROM applications");
+        stmt.execute("DELETE FROM rooms");
+        stmt.execute("DELETE FROM room_requests");
+        System.out.println(" [DB] Sample data cleared.");
+    } catch (SQLException e) {
+        System.err.println("[ERROR] Clearing sample data: " + e.getMessage());
+    }
+}
+
+}
+
