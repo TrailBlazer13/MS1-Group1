@@ -9,10 +9,10 @@ public class Mission {
     private       int    progress;   
     private       String assigned;    
     private       String postedDate;  
-    
+    private final double REWARD;   // NEW CODE
 
     public Mission(String id, String title, String status, int progress,
-                   String assigned, String deadline, String postedDate) {
+                   String assigned, String deadline, String postedDate, double reward) {
         this.ID         = id;
         this.TITLE      = title;
         this.DEADLINE   = deadline;
@@ -20,10 +20,11 @@ public class Mission {
         this.progress   = progress;
         this.assigned   = assigned;
         this.postedDate = postedDate;
+        this.REWARD     = Math.max(0, reward);   // NEW CODE — guard against negatives
     }
 
 
-    public Mission(String id, String title, String deadline) {
+    public Mission(String id, String title, String deadline, double reward) {
         this.ID         = id;
         this.TITLE      = title;
         this.DEADLINE   = deadline;
@@ -31,6 +32,7 @@ public class Mission {
         this.progress   = 0;
         this.assigned   = "Unassigned";
         this.postedDate = null;
+        this.REWARD     = Math.max(0, reward);   // NEW CODE
     }
 
     
@@ -41,6 +43,7 @@ public class Mission {
     public int    getProgress()   { return progress; }
     public String getAssigned()   { return assigned; }
     public String getPostedDate() { return postedDate; }
+    public double getReward() { return REWARD; }
 
   
     public void setStatus(String status)       { this.status = status; }
@@ -60,6 +63,7 @@ public class Mission {
         System.out.printf( "  | Deadline     : %-41s |%n", DEADLINE);
         System.out.printf( "  | Posted On    : %-41s |%n",
             postedDate != null ? postedDate : "Not yet posted");
+        System.out.printf( "  | Reward    : %-41s |%n", String.format("%.2f gold coins", REWARD));
         System.out.println("  +----------------------------------------------------------+");
     }
 }
