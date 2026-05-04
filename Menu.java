@@ -9,41 +9,54 @@ import java.util.Scanner;
 
 public class Menu {
 
-    private final Scanner            scanner     = new Scanner(System.in);
+    private final Scanner scanner = new Scanner(System.in);         // keep this
+    private final InputHandler input = new InputHandler(scanner);   // NEW CODE
     private final ApplicationService appService  = new ApplicationService();
     private final AdventurerService  advService  = new AdventurerService();
     private final MissionService     msnService  = new MissionService();
     private final RoomService        roomService = new RoomService();
+    private final PaymentService paymentService = new PaymentService();
 
-    public void start() {
+    public void start() {  // MODIFIED CODE
         printBanner();
         int choice;
         do {
-            printMainMenu();
-            choice = readInt();
-            switch (choice) {
-                case 1  -> clerkDeskMenu();
-                case 0  -> System.out.println(
-                    "\n  May your blades stay sharp, traveler. Farewell!\n");
-                default -> System.out.println("  [X] Invalid option. Try again.");
+            try {
+                printMainMenu();
+                choice = input.readInt();
+                switch (choice) {
+                    case 1 -> clerkDeskMenu();
+                    case 0 -> System.out.println(
+                            "\n May your blades stay sharp, traveler. Farewell!\n");
+                    default -> System.out.println(" [X] Invalid option. Try again.");
+                }
+            } catch (Exception e) {
+                System.out.println(" [X] Unexpected error in main menu. Recovering...");
+                choice = -999;
             }
         } while (choice != 0);
     }
 
-    private void clerkDeskMenu() {
+    private void clerkDeskMenu() {  // MODIFIED CODE
         int choice;
         do {
-            printClerkMenu();
-            choice = readInt();
-            switch (choice) {
-                case 1  -> checkApplications();
-                case 2  -> viewAdventurers();
-                case 3  -> missionRequests();
-                case 4  -> missionStatus();
-                case 5  -> roomRequests();
-                case 6  -> roomStatus();
-                case 0  -> System.out.println("  [<] Returning to main hall...");
-                default -> System.out.println("  [X] Unknown command. Try again.");
+            try {
+                printClerkMenu();
+                choice = input.readInt();
+                switch (choice) {
+                    case 1 -> checkApplications();
+                    case 2 -> viewAdventurers();
+                    case 3 -> missionRequests();
+                    case 4 -> missionStatus();
+                    case 5 -> roomRequests();
+                    case 6 -> roomStatus();
+                    case 7 -> viewPaymentLedger();
+                    case 0 -> System.out.println(" [<] Returning to main hall...");
+                    default -> System.out.println(" [X] Unknown command. Try again.");
+                }
+            } catch (Exception e) {
+                System.out.println(" [X] Unexpected error in clerk menu. Recovering...");
+                choice = -999;
             }
         } while (choice != 0);
     }
@@ -303,18 +316,21 @@ public class Menu {
         } while (choice != 0);
     }
 
-    private void addNewMissionRequest() {
-        System.out.println("  -- Register New Mission Request --");
-
-        String title = readNonEmpty("  Mission Title   : ");
-        
-        String deadline = readDate("  Deadline Date");
-
-        if (msnService.addMission(title, deadline)) {
-            System.out.println("  [OK] Mission request registered successfully!");
-            System.out.println("  [DB] New mission saved to database.");
-        } else {
-            System.out.println("  [X] Failed to register mission. Please try again.");
+    private void addNewMissionRequest() {  // MODIFIED CODE
+        try {
+            System.out.println(" -- Register New Mission Request --");
+            String title    = readNonEmpty(" Mission Title  : ");
+            String deadline = readDate(" Deadline Date");
+            double reward   = readPositiveDouble(" Mission Reward (gold coins)");
+ 
+            if (msnService.addMission(title, deadline, reward)) {
+                System.out.println(" [OK] Mission request registered successfully!");
+                System.out.println(" [DB] New mission saved to database.");
+            } else {
+                System.out.println(" [X] Failed to register mission. Please try again.");
+            }
+        } catch (Exception e) {
+            System.out.println(" [X] Error registering mission. Returning to menu.");
         }
     }
 
@@ -692,6 +708,7 @@ public class Menu {
         System.out.println("   4. Mission Status");
         System.out.println("   5. Room Requests");
         System.out.println("   6. Room Status");
+        System.out.println("   7. View Payment Ledger");
         System.out.println("   0. Back");
         System.out.print("\n   > ");
     }
@@ -729,104 +746,112 @@ public class Menu {
         printDivider();
     }
 
-    private int readInt() {
-        try {
-            return Integer.parseInt(scanner.nextLine().trim());
-        } catch (NumberFormatException e) {
-            return -999;
-        }
+    private int readInt() {  // MODIFIED CODE
+        return input.readInt();
     }
 
-    private String readNonEmpty(String prompt) {
-        String val = "";
-        while (val.isEmpty()) {
-            System.out.print(prompt);
-            val = scanner.nextLine().trim();
-            if (val.isEmpty()) {
-                System.out.println("  [X] This field cannot be empty. Please try again.");
-            }
-        }
-        return val;
+    private String readNonEmpty(String prompt) {  // MODIFIED CODE
+        return input.readNonEmpty(prompt);
     }
 
-    private String readDate(String label) {
-        while (true) {
-            System.out.print("  " + label + " (YYYY-MM-DD): ");
-            String val = scanner.nextLine().trim();
-            if (!val.matches("\\d{4}-\\d{2}-\\d{2}")) {
-                System.out.println("  [X] Date must be in YYYY-MM-DD format (e.g. 2025-06-15).");
-                continue;
-            }
-            try {
-                LocalDate.parse(val); // throws if not a real date (e.g. 2025-02-30)
-                return val;
-            } catch (Exception e) {
-                System.out.println("  [X] That date does not exist on the calendar. Please re-enter.");
-            }
-        }
+    private String readDate(String label) {  // MODIFIED CODE
+        return input.readDate(label);
     }
 
-    private String readDateAfter(String label, String checkIn) {
-        while (true) {
-            String val = readDate(label);
-            try {
-                LocalDate ciDate = LocalDate.parse(checkIn);
-                LocalDate coDate = LocalDate.parse(val);
-                if (coDate.isAfter(ciDate)) {
-                    return val;
-                } else {
-                    System.out.println("  [X] Check-out date must be after check-in ("
-                        + checkIn + "). Please re-enter.");
-                }
-            } catch (Exception e) {
-                System.out.println("  [X] Invalid date comparison. Please re-enter.");
-            }
-        }
+    private String readDateAfter(String label, String checkIn) {  // MODIFIED CODE
+        return input.readDateAfter(label, checkIn);
     }
 
-    private String readRank(String label) {
-        while (true) {
-            System.out.print("  " + label + " (BRONZE/SILVER/GOLD/PLATINUM): ");
-            String val = scanner.nextLine().trim().toUpperCase();
-            if (val.equals("BRONZE") || val.equals("SILVER")
-                    || val.equals("GOLD") || val.equals("PLATINUM")) {
-                return val;
-            }
-            System.out.println(
-                "  [X] Invalid rank. Must be BRONZE, SILVER, GOLD, or PLATINUM.");
-        }
+    private String readRank(String label) {  // MODIFIED CODE
+        return input.readRank(label);
     }
 
-    private String readStatus() {
-        while (true) {
-            System.out.print("  Enter status (ACTIVE/INACTIVE): ");
-            String val = scanner.nextLine().trim().toUpperCase();
-            if (val.equals("ACTIVE") || val.equals("INACTIVE")) {
-                return val;
-            }
-            System.out.println("  [X] Invalid status. Must be ACTIVE or INACTIVE.");
-        }
+    private String readStatus() {  // MODIFIED CODE
+        return input.readStatus();
     }
 
-    private String readRoomType() {
-        while (true) {
-            System.out.println(
-                "  Room Types: 1. Common Quarters   "
-                + "2. Private Chamber   3. Noble Suite");
-            System.out.print("  Select (1-3): ");
-            int choice = readInt();
-            switch (choice) {
-                case 1 -> { return "Common Quarters"; }
-                case 2 -> { return "Private Chamber"; }
-                case 3 -> { return "Noble Suite"; }
-                default -> System.out.println(
-                    "  [X] Invalid choice. Please select 1, 2, or 3.");
-            }
+    private String readRoomType() {  // MODIFIED CODE
+        return input.readRoomType();
+    }
+    
+    private double readPositiveDouble(String prompt) {  // MODIFIED CODE
+        return input.readPositiveDouble(prompt);
+    }
+        
+    private void pressEnter() {  // MODIFIED CODE
+        input.pressEnter();
+    }
+    
+    private void viewPaymentLedger() {
+    int choice;
+    do {
+        sectionHeader("PAYMENT LEDGER");
+        System.out.println(" 1. All Transactions");
+        System.out.println(" 2. Mission Payments Only");
+        System.out.println(" 3. Room Payments Only");
+        System.out.println(" 0. Back");
+        System.out.print("\n > ");
+        choice = readInt();
+ 
+        switch (choice) {
+            case 1 -> displayPayments(paymentService.getAllPayments(), "ALL");
+            case 2 -> displayPayments(paymentService.getPaymentsByCategory("MISSION"), "MISSION");
+            case 3 -> displayPayments(paymentService.getPaymentsByCategory("ROOM"), "ROOM");
+            case 0 -> {}
+            default -> System.out.println(" [X] Invalid choice.");
         }
-    }
-
-    private void pressEnter() {
-        System.out.print("\n  [Press ENTER to continue...]");
-        scanner.nextLine();
-    }
+    } while (choice != 0);
 }
+ 
+private void displayPayments(java.util.List<Object[]> payments, String label) {
+    if (payments.isEmpty()) {
+        System.out.println(" No " + label.toLowerCase() + " payment records found.");
+        pressEnter();
+        return;
+    }
+    printDivider();
+    System.out.printf(" %-20s %-8s %-10s %-35s %10s %-10s%n",
+            "Transaction ID", "Cat.", "Ref ID", "Description", "Amount", "Date");
+    printDivider();
+    double total = 0;
+    for (Object[] p : payments) {
+        String txn  = safeStr(p[1]);
+        String cat  = safeStr(p[2]);
+        String ref  = safeStr(p[3]);
+        String desc = safeStr(p[4]);
+        double amt  = safeDouble(p[5]);
+        String date = safeStr(p[7]);
+ 
+        String shortDesc = desc.length() > 34 ? desc.substring(0, 31) + "..." : desc;
+        String shortTxn  = txn.length()  > 19 ? txn.substring(0, 16)  + "..." : txn;
+ 
+        System.out.printf(" %-20s %-8s %-10s %-35s %10.2f %-10s%n",
+                shortTxn, cat, ref, shortDesc, amt, date);
+        total += amt;
+    }
+    printDivider();
+    System.out.printf(" Total collected: %.2f gold coins | Records: %d%n",
+            total, payments.size());
+    pressEnter();
+}
+
+    private String safeStr(Object o) {  // MODIFIED CODE
+        if (o == null) return "N/A";
+        try {
+            String s = o.toString().trim();
+            return s.isEmpty() ? "N/A" : s;
+        } catch (Exception e) {
+            return "N/A";
+        }
+    }
+ 
+    private double safeDouble(Object o) {  // MODIFIED CODE
+        if (o == null) return 0.0;
+        try {
+            return Double.parseDouble(o.toString().trim());
+        } catch (Exception e) {
+            return 0.0;
+        }
+    }   
+}
+
