@@ -9,21 +9,21 @@ import java.util.Scanner;
 
 public class Menu {
 
-    private final Scanner scanner = new Scanner(System.in);         // keep this
-    private final InputHandler input = new InputHandler(scanner);   // NEW CODE
-    private final ApplicationService appService  = new ApplicationService();
-    private final AdventurerService  advService  = new AdventurerService();
-    private final MissionService     msnService  = new MissionService();
-    private final RoomService        roomService = new RoomService();
-    private final PaymentService paymentService = new PaymentService();
+    private final Scanner        SCANNER        = new Scanner(System.in);
+    private final InputHandler   INPUT          = new InputHandler(SCANNER);
+    private final ApplicationService APP_SERVICE  = new ApplicationService();
+    private final AdventurerService  ADV_SERVICE  = new AdventurerService();
+    private final MissionService     MSN_SERVICE  = new MissionService();
+    private final RoomService        ROOM_SERVICE = new RoomService();
+    private final PaymentService     PAYMENT_SERVICE = new PaymentService();
 
-    public void start() {  // MODIFIED CODE
+    public void start() {
         printBanner();
         int choice;
         do {
             try {
                 printMainMenu();
-                choice = input.readInt();
+                choice = INPUT.readInt();
                 switch (choice) {
                     case 1 -> clerkDeskMenu();
                     case 0 -> System.out.println(
@@ -37,12 +37,12 @@ public class Menu {
         } while (choice != 0);
     }
 
-    private void clerkDeskMenu() {  // MODIFIED CODE
+    private void clerkDeskMenu() {
         int choice;
         do {
             try {
                 printClerkMenu();
-                choice = input.readInt();
+                choice = INPUT.readInt();
                 switch (choice) {
                     case 1 -> checkApplications();
                     case 2 -> viewAdventurers();
@@ -65,7 +65,7 @@ public class Menu {
         int choice;
         do {
             sectionHeader("CHECK APPLICATIONS");
-            List<Application> pending = appService.getPendingApplications();
+            List<Application> pending = APP_SERVICE.getPendingApplications();
 
             if (pending.isEmpty()) {
                 System.out.println("  No current applications.");
@@ -105,7 +105,7 @@ public class Menu {
             System.out.println("  [X] Invalid ID. Must be a positive number.");
             return;
         }
-        Application a = appService.getApplicationById(id);
+        Application a = APP_SERVICE.getApplicationById(id);
         if (a == null) {
             System.out.println("  [X] Application not found.");
             return;
@@ -115,12 +115,12 @@ public class Menu {
             return;
         }
         System.out.printf("  Confirm APPROVE for '%s'? (y/n): ", a.getName());
-        String confirm = scanner.nextLine().trim().toLowerCase();
+        String confirm = SCANNER.nextLine().trim().toLowerCase();
         if (!confirm.equals("y")) {
             System.out.println("  [<] Action cancelled.");
             return;
         }
-        if (appService.approveApplication(id)) {
+        if (APP_SERVICE.approveApplication(id)) {
             System.out.println("  [OK] Application APPROVED! '"
                 + a.getName() + "' has been inducted into the Guild!");
         } else {
@@ -135,7 +135,7 @@ public class Menu {
             System.out.println("  [X] Invalid ID. Must be a positive number.");
             return;
         }
-        Application a = appService.getApplicationById(id);
+        Application a = APP_SERVICE.getApplicationById(id);
         if (a == null) {
             System.out.println("  [X] Application not found.");
             return;
@@ -145,12 +145,12 @@ public class Menu {
             return;
         }
         System.out.printf("  Confirm REJECT for '%s'? (y/n): ", a.getName());
-        String confirm = scanner.nextLine().trim().toLowerCase();
+        String confirm = SCANNER.nextLine().trim().toLowerCase();
         if (!confirm.equals("y")) {
             System.out.println("  [<] Action cancelled.");
             return;
         }
-        if (appService.rejectApplication(id)) {
+        if (APP_SERVICE.rejectApplication(id)) {
             System.out.println("  [X] Application REJECTED. Better luck next season.");
         } else {
             System.out.println("  [X] Rejection failed. Please try again.");
@@ -161,18 +161,16 @@ public class Menu {
         System.out.println("  -- Submit New Application --");
 
         String name = readNonEmpty("  Applicant Name       : ");
-        if (appService.applicationExists(name)) {
+        if (APP_SERVICE.applicationExists(name)) {
             System.out.println("  [X] An application already exists for '" + name + "'.");
             return;
         }
 
         String background = readNonEmpty("  Background / Story   : ");
+        String rank       = readRank("  Requested Rank");
+        String date       = readDate("  Submission Date");
 
-        String rank = readRank("  Requested Rank");
-
-        String date = readDate("  Submission Date");
-
-        if (appService.submitApplication(name, background, rank, date)) {
+        if (APP_SERVICE.submitApplication(name, background, rank, date)) {
             System.out.println("  [OK] Application submitted successfully for '" + name + "'!");
             System.out.println("  [DB] Record saved to database.");
         } else {
@@ -182,7 +180,7 @@ public class Menu {
 
     private void viewAllApplications() {
         sectionHeader("ALL APPLICATIONS");
-        List<Application> all = appService.getAllApplications();
+        List<Application> all = APP_SERVICE.getAllApplications();
         if (all.isEmpty()) {
             System.out.println("  No applications found.");
             return;
@@ -209,18 +207,18 @@ public class Menu {
             choice = readInt();
 
             switch (choice) {
-                case 1 -> displayAdventurers(advService.getAllAdventurers());
+                case 1 -> displayAdventurers(ADV_SERVICE.getAllAdventurers());
                 case 2 -> {
                     String kw = readNonEmpty("  Enter name keyword: ");
-                    displayAdventurers(advService.searchByName(kw));
+                    displayAdventurers(ADV_SERVICE.searchByName(kw));
                 }
                 case 3 -> {
                     String rank = readRank("  Filter by Rank");
-                    displayAdventurers(advService.filterByRank(rank));
+                    displayAdventurers(ADV_SERVICE.filterByRank(rank));
                 }
                 case 4 -> {
                     String status = readStatus();
-                    displayAdventurers(advService.filterByStatus(status));
+                    displayAdventurers(ADV_SERVICE.filterByStatus(status));
                 }
                 case 0  -> {}
                 default -> System.out.println("  [X] Invalid choice.");
@@ -245,10 +243,10 @@ public class Menu {
         int choice;
         do {
             sectionHeader("MISSION REQUESTS");
-            List<Mission> missions = msnService.getAllMissions();
+            List<Mission> missions = MSN_SERVICE.getAllMissions();
             printMissionTableHeader();
             for (Mission m : missions) {
-                String tag = msnService.isOverdue(m) ? " [OVERDUE]" : "";
+                String tag = MSN_SERVICE.isOverdue(m) ? " [OVERDUE]" : "";
                 String t   = m.getTitle().length() > 37
                     ? m.getTitle().substring(0, 34) + "..."
                     : m.getTitle();
@@ -270,17 +268,17 @@ public class Menu {
             switch (choice) {
                 case 1 -> {
                     String id = readNonEmpty("  Mission ID to POST: ").toUpperCase().trim();
-                    if (msnService.getMissionById(id) == null) {
+                    if (MSN_SERVICE.getMissionById(id) == null) {
                         System.out.println("  [X] Mission ID '" + id + "' not found.");
                     } else {
-                        msnService.postMission(id);
+                        MSN_SERVICE.postMission(id);
                     }
                 }
                 case 2 -> {
                     String id = readNonEmpty("  Mission ID to UNPOST: ").toUpperCase().trim();
-                    if (msnService.getMissionById(id) == null) {
+                    if (MSN_SERVICE.getMissionById(id) == null) {
                         System.out.println("  [X] Mission ID '" + id + "' not found.");
-                    } else if (msnService.unpostMission(id)) {
+                    } else if (MSN_SERVICE.unpostMission(id)) {
                         System.out.println("  [OK] Mission " + id + " unposted successfully.");
                         System.out.println("  [DB] Status updated in database.");
                     } else {
@@ -289,9 +287,9 @@ public class Menu {
                 }
                 case 3 -> {
                     String id = readNonEmpty("  Mission ID to APPROVE: ").toUpperCase().trim();
-                    if (msnService.getMissionById(id) == null) {
+                    if (MSN_SERVICE.getMissionById(id) == null) {
                         System.out.println("  [X] Mission ID '" + id + "' not found.");
-                    } else if (msnService.approveMission(id)) {
+                    } else if (MSN_SERVICE.approveMission(id)) {
                         System.out.println("  [OK] Mission " + id + " approved!");
                         System.out.println("  [DB] Status updated in database.");
                     } else {
@@ -300,9 +298,9 @@ public class Menu {
                 }
                 case 4 -> {
                     String id = readNonEmpty("  Mission ID to DENY: ").toUpperCase().trim();
-                    if (msnService.getMissionById(id) == null) {
+                    if (MSN_SERVICE.getMissionById(id) == null) {
                         System.out.println("  [X] Mission ID '" + id + "' not found.");
-                    } else if (msnService.denyMission(id)) {
+                    } else if (MSN_SERVICE.denyMission(id)) {
                         System.out.println("  [X] Mission " + id + " denied.");
                         System.out.println("  [DB] Status updated in database.");
                     } else {
@@ -316,14 +314,14 @@ public class Menu {
         } while (choice != 0);
     }
 
-    private void addNewMissionRequest() {  // MODIFIED CODE
+    private void addNewMissionRequest() {
         try {
             System.out.println(" -- Register New Mission Request --");
             String title    = readNonEmpty(" Mission Title  : ");
             String deadline = readDate(" Deadline Date");
             double reward   = readPositiveDouble(" Mission Reward (gold coins)");
- 
-            if (msnService.addMission(title, deadline, reward)) {
+
+            if (MSN_SERVICE.addMission(title, deadline, reward)) {
                 System.out.println(" [OK] Mission request registered successfully!");
                 System.out.println(" [DB] New mission saved to database.");
             } else {
@@ -359,7 +357,7 @@ public class Menu {
 
     private void viewMissionDetails() {
         String id = readNonEmpty("  Enter Mission ID: ").toUpperCase().trim();
-        Mission m = msnService.getMissionById(id);
+        Mission m = MSN_SERVICE.getMissionById(id);
         if (m == null) {
             System.out.println("  [X] Mission not found or expired.");
             return;
@@ -368,7 +366,7 @@ public class Menu {
         System.out.println();
         m.printDetailed();
 
-        if (msnService.isOverdue(m)) {
+        if (MSN_SERVICE.isOverdue(m)) {
             System.out.println("  [!] WARNING: This mission is OVERDUE!");
         }
 
@@ -388,7 +386,7 @@ public class Menu {
 
     private void updateMissionStatus() {
         String id = readNonEmpty("  Mission ID to update: ").toUpperCase().trim();
-        Mission m = msnService.getMissionById(id);
+        Mission m = MSN_SERVICE.getMissionById(id);
         if (m == null) {
             System.out.println("  [X] Mission not found or expired.");
             return;
@@ -405,10 +403,10 @@ public class Menu {
 
         switch (sub) {
             case 1 -> {
-                if (msnService.updateMissionStatus(id, "COMPLETED", 100)) {
+                if (MSN_SERVICE.updateMissionStatus(id, "COMPLETED", 100)) {
                     if (!m.getAssigned().equals("Unassigned")) {
                         for (String name : m.getAssigned().split(",")) {
-                            advService.appendHistory(
+                            ADV_SERVICE.appendHistory(
                                 name.trim(), "Completed: " + m.getTitle());
                         }
                     }
@@ -419,7 +417,7 @@ public class Menu {
                 }
             }
             case 2 -> {
-                if (msnService.updateMissionStatus(id, "FAILED", m.getProgress())) {
+                if (MSN_SERVICE.updateMissionStatus(id, "FAILED", m.getProgress())) {
                     System.out.println("  [X] Mission marked FAILED. The guild mourns.");
                     System.out.println("  [DB] Status updated in database.");
                 } else {
@@ -433,7 +431,7 @@ public class Menu {
                     System.out.println("  [X] Invalid progress value. Must be between 0 and 100.");
                     return;
                 }
-                if (msnService.updateMissionStatus(id, m.getStatus(), progress)) {
+                if (MSN_SERVICE.updateMissionStatus(id, m.getStatus(), progress)) {
                     System.out.println("  [OK] Progress updated to " + progress + "%.");
                     System.out.println("  [DB] Progress saved to database.");
                 } else {
@@ -446,20 +444,20 @@ public class Menu {
 
     private void assignToMission() {
         String missionId = readNonEmpty("  Mission ID       : ").toUpperCase().trim();
-        Mission m = msnService.getMissionById(missionId);
+        Mission m = MSN_SERVICE.getMissionById(missionId);
         if (m == null) {
             System.out.println("  [X] Mission not found or expired.");
             return;
         }
 
         String advName = readNonEmpty("  Adventurer Name  : ");
-        if (!advService.adventurerExists(advName)) {
+        if (!ADV_SERVICE.adventurerExists(advName)) {
             System.out.println("  [X] No adventurer found with the name '" + advName + "'.");
             System.out.println("  [!] Make sure the name matches exactly as registered.");
             return;
         }
 
-        if (msnService.assignAdventurer(missionId, advName)) {
+        if (MSN_SERVICE.assignAdventurer(missionId, advName)) {
             System.out.println("  [OK] " + advName
                 + " has been assigned to mission " + missionId + "!");
             System.out.println("  [DB] Assignment saved to database.");
@@ -470,11 +468,11 @@ public class Menu {
 
     private void viewOverdueMissions() {
         sectionHeader("OVERDUE MISSIONS");
-        List<Mission> all = msnService.getAllMissions();
+        List<Mission> all = MSN_SERVICE.getAllMissions();
         boolean found = false;
         printMissionTableHeader();
         for (Mission m : all) {
-            if (msnService.isOverdue(m)) {
+            if (MSN_SERVICE.isOverdue(m)) {
                 String t = m.getTitle().length() > 37
                     ? m.getTitle().substring(0, 34) + "..."
                     : m.getTitle();
@@ -483,7 +481,7 @@ public class Menu {
                 found = true;
             }
         }
-        if (!found) {
+        if (!found) {in
             System.out.println("  No overdue missions. The guild is on schedule!");
         }
         printDivider();
@@ -494,7 +492,7 @@ public class Menu {
         int choice;
         do {
             sectionHeader("ROOM REQUESTS");
-            List<Object[]> requests = roomService.getAllRoomRequests();
+            List<Object[]> requests = ROOM_SERVICE.getAllRoomRequests();
 
             if (requests.isEmpty()) {
                 System.out.println("  No pending requests.");
@@ -523,7 +521,7 @@ public class Menu {
                     int id = readInt();
                     if (id <= 0) {
                         System.out.println("  [X] Invalid ID.");
-                    } else if (roomService.approveRoomRequest(id)) {
+                    } else if (ROOM_SERVICE.approveRoomRequest(id)) {
                         System.out.println("  [OK] Room request approved and room assigned!");
                         System.out.println("  [DB] Room status updated in database.");
                     }
@@ -533,7 +531,7 @@ public class Menu {
                     int id = readInt();
                     if (id <= 0) {
                         System.out.println("  [X] Invalid ID.");
-                    } else if (roomService.denyRoomRequest(id)) {
+                    } else if (ROOM_SERVICE.denyRoomRequest(id)) {
                         System.out.println("  [X] Room request denied.");
                         System.out.println("  [DB] Status updated in database.");
                     } else {
@@ -541,7 +539,7 @@ public class Menu {
                     }
                 }
                 case 3 -> {
-                    List<Object[]> pending = roomService.getPendingRoomRequests();
+                    List<Object[]> pending = ROOM_SERVICE.getPendingRoomRequests();
                     if (pending.isEmpty()) {
                         System.out.println("  No pending requests.");
                     } else {
@@ -574,16 +572,13 @@ public class Menu {
     private void submitNewRoomRequest() {
         System.out.println("  -- New Room Request --");
 
-        String name = readNonEmpty("  Guest Name      : ");
-
+        String name     = readNonEmpty("  Guest Name      : ");
         String roomType = readRoomType();
-
-        String checkIn = readDate("  Check-in Date");
-
+        String checkIn  = readDate("  Check-in Date");
         String checkOut = readDateAfter("  Check-out Date", checkIn);
         if (checkOut == null) return;
 
-        if (roomService.addRoomRequest(name, roomType, checkIn, checkOut)) {
+        if (ROOM_SERVICE.addRoomRequest(name, roomType, checkIn, checkOut)) {
             System.out.println("  [OK] Room request submitted for '" + name + "'!");
             System.out.println("  [DB] Request saved to database.");
         } else {
@@ -596,20 +591,20 @@ public class Menu {
         do {
             sectionHeader("ROOM STATUS");
 
-            int autoChecked = roomService.autoCheckoutExpired();
+            int autoChecked = ROOM_SERVICE.autoCheckoutExpired();
             if (autoChecked > 0) {
                 System.out.println("  [Auto] " + autoChecked
                     + " room(s) released after checkout date passed.");
                 System.out.println("  [DB] Room statuses updated automatically.");
             }
 
-            int available   = roomService.getRoomCountByStatus("AVAILABLE");
-            int occupied    = roomService.getRoomCountByStatus("OCCUPIED");
-            int maintenance = roomService.getRoomCountByStatus("MAINTENANCE");
+            int available   = ROOM_SERVICE.getRoomCountByStatus("AVAILABLE");
+            int occupied    = ROOM_SERVICE.getRoomCountByStatus("OCCUPIED");
+            int maintenance = ROOM_SERVICE.getRoomCountByStatus("MAINTENANCE");
             System.out.printf("  Available: %d  |  Occupied: %d  |  Maintenance: %d%n%n",
                 available, occupied, maintenance);
 
-            List<Room> rooms = roomService.getAllRooms();
+            List<Room> rooms = ROOM_SERVICE.getAllRooms();
             System.out.printf("  %-6s | %-18s | %-12s | %-22s | %s%n",
                 "Room", "Type", "Status", "Occupant", "Checkout");
             printDivider();
@@ -628,27 +623,23 @@ public class Menu {
             switch (choice) {
                 case 1 -> {
                     String rid = readNonEmpty("  Room ID to checkout: ").toUpperCase().trim();
-                    if (roomService.checkoutRoom(rid)) {
-                        System.out.println("  [OK] Room " + rid
-                            + " checked out and is now AVAILABLE.");
+                    if (ROOM_SERVICE.checkoutRoom(rid)) {
+                        System.out.println("  [OK] Room " + rid + " checked out and is now AVAILABLE.");
                         System.out.println("  [DB] Room status updated in database.");
                     }
                 }
                 case 2 -> {
-                    String rid = readNonEmpty(
-                        "  Room ID to set MAINTENANCE: ").toUpperCase().trim();
-                    if (roomService.setRoomMaintenance(rid)) {
+                    String rid = readNonEmpty("  Room ID to set MAINTENANCE: ").toUpperCase().trim();
+                    if (ROOM_SERVICE.setRoomMaintenance(rid)) {
                         System.out.println("  [OK] Room " + rid + " set to MAINTENANCE.");
                         System.out.println("  [DB] Room status updated in database.");
                     } else {
-                        System.out.println(
-                            "  [X] Cannot set to maintenance. Room may be OCCUPIED.");
+                        System.out.println("  [X] Cannot set to maintenance. Room may be OCCUPIED.");
                     }
                 }
                 case 3 -> {
-                    String rid = readNonEmpty(
-                        "  Room ID to set AVAILABLE: ").toUpperCase().trim();
-                    if (roomService.setRoomAvailable(rid)) {
+                    String rid = readNonEmpty("  Room ID to set AVAILABLE: ").toUpperCase().trim();
+                    if (ROOM_SERVICE.setRoomAvailable(rid)) {
                         System.out.println("  [OK] Room " + rid + " set to AVAILABLE.");
                         System.out.println("  [DB] Room status updated in database.");
                     } else {
@@ -657,7 +648,7 @@ public class Menu {
                 }
                 case 4 -> {
                     String rid = readNonEmpty("  Room ID to view: ").toUpperCase().trim();
-                    Room r = roomService.getRoomById(rid);
+                    Room r = ROOM_SERVICE.getRoomById(rid);
                     if (r == null) {
                         System.out.println("  [X] Room not found.");
                     } else {
@@ -677,6 +668,63 @@ public class Menu {
             }
         } while (choice != 0);
     }
+
+    private void viewPaymentLedger() {
+        int choice;
+        do {
+            sectionHeader("PAYMENT LEDGER");
+            System.out.println(" 1. All Transactions");
+            System.out.println(" 2. Mission Payments Only");
+            System.out.println(" 3. Room Payments Only");
+            System.out.println(" 0. Back");
+            System.out.print("\n > ");
+            choice = readInt();
+
+            switch (choice) {
+                case 1 -> displayPayments(PAYMENT_SERVICE.getAllPayments(), "ALL");
+                case 2 -> displayPayments(PAYMENT_SERVICE.getPaymentsByCategory("MISSION"), "MISSION");
+                case 3 -> displayPayments(PAYMENT_SERVICE.getPaymentsByCategory("ROOM"), "ROOM");
+                case 0 -> {}
+                default -> System.out.println(" [X] Invalid choice.");
+            }
+        } while (choice != 0);
+    }
+
+    private void displayPayments(java.util.List<Object[]> payments, String label) {
+        if (payments.isEmpty()) {
+            System.out.println(" No " + label.toLowerCase() + " payment records found.");
+            pressEnter();
+            return;
+        }
+        printDivider();
+        System.out.printf(" %-20s %-8s %-10s %-35s %10s %-10s%n",
+                "Transaction ID", "Cat.", "Ref ID", "Description", "Amount", "Date");
+        printDivider();
+        double total = 0;
+        for (Object[] p : payments) {
+            String txn  = safeStr(p[1]);
+            String cat  = safeStr(p[2]);
+            String ref  = safeStr(p[3]);
+            String desc = safeStr(p[4]);
+            double amt  = safeDouble(p[5]);
+            String date = safeStr(p[7]);
+
+            String shortDesc = desc.length() > 34 ? desc.substring(0, 31) + "..." : desc;
+            String shortTxn  = txn.length()  > 19 ? txn.substring(0, 16)  + "..." : txn;
+
+            System.out.printf(" %-20s %-8s %-10s %-35s %10.2f %-10s%n",
+                    shortTxn, cat, ref, shortDesc, amt, date);
+            total += amt;
+        }
+        printDivider();
+        System.out.printf(" Total collected: %.2f gold coins | Records: %d%n",
+                total, payments.size());
+        pressEnter();
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    //  PRINT HELPERS
+    // ══════════════════════════════════════════════════════════════
 
     private void printBanner() {
         System.out.println();
@@ -721,8 +769,7 @@ public class Menu {
     }
 
     private void printDivider() {
-        System.out.println(
-            "  ------------------------------------------------------------");
+        System.out.println("  ------------------------------------------------------------");
     }
 
     private void printApplicationTableHeader() {
@@ -746,96 +793,21 @@ public class Menu {
         printDivider();
     }
 
-    private int readInt() {  // MODIFIED CODE
-        return input.readInt();
-    }
+    // ══════════════════════════════════════════════════════════════
+    //  INPUT DELEGATES
+    // ══════════════════════════════════════════════════════════════
 
-    private String readNonEmpty(String prompt) {  // MODIFIED CODE
-        return input.readNonEmpty(prompt);
-    }
+    private int readInt()                                    { return INPUT.readInt(); }
+    private String readNonEmpty(String prompt)               { return INPUT.readNonEmpty(prompt); }
+    private String readDate(String label)                    { return INPUT.readDate(label); }
+    private String readDateAfter(String label, String ci)    { return INPUT.readDateAfter(label, ci); }
+    private String readRank(String label)                    { return INPUT.readRank(label); }
+    private String readStatus()                              { return INPUT.readStatus(); }
+    private String readRoomType()                            { return INPUT.readRoomType(); }
+    private double readPositiveDouble(String prompt)         { return INPUT.readPositiveDouble(prompt); }
+    private void   pressEnter()                              { INPUT.pressEnter(); }
 
-    private String readDate(String label) {  // MODIFIED CODE
-        return input.readDate(label);
-    }
-
-    private String readDateAfter(String label, String checkIn) {  // MODIFIED CODE
-        return input.readDateAfter(label, checkIn);
-    }
-
-    private String readRank(String label) {  // MODIFIED CODE
-        return input.readRank(label);
-    }
-
-    private String readStatus() {  // MODIFIED CODE
-        return input.readStatus();
-    }
-
-    private String readRoomType() {  // MODIFIED CODE
-        return input.readRoomType();
-    }
-    
-    private double readPositiveDouble(String prompt) {  // MODIFIED CODE
-        return input.readPositiveDouble(prompt);
-    }
-        
-    private void pressEnter() {  // MODIFIED CODE
-        input.pressEnter();
-    }
-    
-    private void viewPaymentLedger() {
-    int choice;
-    do {
-        sectionHeader("PAYMENT LEDGER");
-        System.out.println(" 1. All Transactions");
-        System.out.println(" 2. Mission Payments Only");
-        System.out.println(" 3. Room Payments Only");
-        System.out.println(" 0. Back");
-        System.out.print("\n > ");
-        choice = readInt();
- 
-        switch (choice) {
-            case 1 -> displayPayments(paymentService.getAllPayments(), "ALL");
-            case 2 -> displayPayments(paymentService.getPaymentsByCategory("MISSION"), "MISSION");
-            case 3 -> displayPayments(paymentService.getPaymentsByCategory("ROOM"), "ROOM");
-            case 0 -> {}
-            default -> System.out.println(" [X] Invalid choice.");
-        }
-    } while (choice != 0);
-}
- 
-private void displayPayments(java.util.List<Object[]> payments, String label) {
-    if (payments.isEmpty()) {
-        System.out.println(" No " + label.toLowerCase() + " payment records found.");
-        pressEnter();
-        return;
-    }
-    printDivider();
-    System.out.printf(" %-20s %-8s %-10s %-35s %10s %-10s%n",
-            "Transaction ID", "Cat.", "Ref ID", "Description", "Amount", "Date");
-    printDivider();
-    double total = 0;
-    for (Object[] p : payments) {
-        String txn  = safeStr(p[1]);
-        String cat  = safeStr(p[2]);
-        String ref  = safeStr(p[3]);
-        String desc = safeStr(p[4]);
-        double amt  = safeDouble(p[5]);
-        String date = safeStr(p[7]);
- 
-        String shortDesc = desc.length() > 34 ? desc.substring(0, 31) + "..." : desc;
-        String shortTxn  = txn.length()  > 19 ? txn.substring(0, 16)  + "..." : txn;
- 
-        System.out.printf(" %-20s %-8s %-10s %-35s %10.2f %-10s%n",
-                shortTxn, cat, ref, shortDesc, amt, date);
-        total += amt;
-    }
-    printDivider();
-    System.out.printf(" Total collected: %.2f gold coins | Records: %d%n",
-            total, payments.size());
-    pressEnter();
-}
-
-    private String safeStr(Object o) {  // MODIFIED CODE
+    private String safeStr(Object o) {
         if (o == null) return "N/A";
         try {
             String s = o.toString().trim();
@@ -844,14 +816,13 @@ private void displayPayments(java.util.List<Object[]> payments, String label) {
             return "N/A";
         }
     }
- 
-    private double safeDouble(Object o) {  // MODIFIED CODE
+
+    private double safeDouble(Object o) {
         if (o == null) return 0.0;
         try {
             return Double.parseDouble(o.toString().trim());
         } catch (Exception e) {
             return 0.0;
         }
-    }   
+    }
 }
-
