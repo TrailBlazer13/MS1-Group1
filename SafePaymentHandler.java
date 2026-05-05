@@ -67,7 +67,7 @@ public class SafePaymentHandler {
             // Calculate final amount for tendering
             double afterDiscount = reward * (1 - payment.getDiscountRate());
             double finalAmount   = afterDiscount * 1.12;
-            System.out.printf( " [PAY] Total Due (after discount + VAT): %.2f gp%n", finalAmount);
+            System.out.printf(" [PAY] Total Due (VAT inclusive): %.2f gp%n", finalAmount);
  
             // Collect amount tendered
             PaymentInputHandler inputHandler = new PaymentInputHandler(scanner);
