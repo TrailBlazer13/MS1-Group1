@@ -21,6 +21,7 @@ public class RoomService {
         return DB.insertRoomRequest(name, roomType, checkIn, checkOut);
     }
 
+   // MODIFIED CODE — clerk-driven discount, full receipt, PaymentResult used for DB
     public boolean approveRoomRequest(int requestId) {
         try {
             Object[] req = DB.getRoomRequestById(requestId);
@@ -28,41 +29,48 @@ public class RoomService {
                 System.out.println(" [X] Request not found or not pending.");
                 return false;
             }
-
+ 
             String name     = safeStr(req[1]);
             String roomType = safeStr(req[2]);
             String checkIn  = safeStr(req[3]);
             String checkOut = safeStr(req[4]);
-
-            RoomPayment payment = RoomPayment.defaultPayment();
-
-            String txnId = SafePaymentHandler.processRoomPayment(
-                    payment, name, roomType, checkIn, checkOut);
-
-            if (txnId == null) {
+ 
+            // Clerk enters discount via room-type guide
+            PaymentInputHandler payInput = new PaymentInputHandler(new java.util.Scanner(System.in));
+            RoomPayment payment = payInput.buildRoomPayment(roomType);
+ 
+            // Process payment
+            SafePaymentHandler.PaymentResult result =
+                SafePaymentHandler.processRoomPayment(
+                    payment, name, roomType, checkIn, checkOut,
+                    String.valueOf(requestId), new java.util.Scanner(System.in));
+ 
+            if (result == null) {
                 System.out.println(" [X] Room approval blocked: payment was not completed.");
                 return false;
             }
-
-            double baseCost    = RoomPayment.calculateStayCost(roomType, checkIn, checkOut);
-            double finalAmount = baseCost * 1.12;
-            DB.insertPayment(txnId, "ROOM", String.valueOf(requestId),
-                    name + " (" + roomType + ")", finalAmount, "SUCCESS");
-
+ 
+            // Save to payment ledger
+            String description = name + " (" + roomType + ")";
+            DB.insertPayment(result.txnId, "ROOM", String.valueOf(requestId),
+                             description, result.finalAmount, "SUCCESS");
+ 
+            // Assign room
             String roomToBook = DB.findAvailableRoom(roomType);
             if (roomToBook == null) {
                 System.out.println(" [X] No available " + roomType + " for that period.");
                 return false;
             }
-
+ 
             if (!DB.occupyRoom(roomToBook, name, checkOut)) return false;
             return DB.updateRoomRequestStatus(requestId, "APPROVED");
-
+ 
         } catch (Exception e) {
             System.err.println("[ERROR] Unexpected error in approveRoomRequest: " + e.getMessage());
             return false;
         }
     }
+ 
 
     private String safeStr(Object o) {
         if (o == null) return "";
@@ -78,5 +86,3 @@ public class RoomService {
         return DB.updateRoomRequestStatus(requestId, "DENIED");
     }
 }
-
-
