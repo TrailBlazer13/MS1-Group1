@@ -1,4 +1,3 @@
-//updated
 package models;
 
 public class Application {
