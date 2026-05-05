@@ -164,7 +164,7 @@ public class SafePaymentHandler {
             }
  
             double afterDiscount = postingFee * (1 - payment.getDiscountRate());
-            double finalAmount   = afterDiscount * 1.12;
+            double finalAmount = afterDiscount;  
  
             System.out.println("\n ----------------------------------------");
             System.out.println(" [PAY] Mission Posting Fee");
