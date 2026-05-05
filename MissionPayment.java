@@ -1,20 +1,13 @@
 package services;
  
-/**
- * MissionPayment — concrete PaymentFramework for mission reward prepayment.
- * Extends the professor's PaymentFramework without modifying it.
- * Transaction ID generation is handled by SafePaymentHandler.
- */
-public class MissionPayment extends PaymentFramework {  // MODIFIED CODE
+public class MissionPayment extends PaymentFramework {
  
     public MissionPayment(double creditAmount, boolean validPaymentMethod, double discountRate) {
         super(creditAmount, validPaymentMethod, discountRate);
     }
  
-    // Default factory: guild has ample credit, valid payment, no discount
-    public static MissionPayment defaultPayment() {
-        return new MissionPayment(9999.99, true, 0.0);
+    // NEW CODE — exposes protected field from PaymentFramework without modifying it
+    public double getDiscountRate() {
+        return discountRate;
     }
- 
-    // getBaseFee() removed — reward is now dynamic, passed from mission data
 }
