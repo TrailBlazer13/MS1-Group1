@@ -604,6 +604,39 @@ public class GuildDatabase {
         }
     }
 
+// MODIFIED CODE - Add deployMission method to GuildDatabase.java
+
+public boolean deployMission(String missionId) {
+    Mission m = getMissionById(missionId);
+    if (m == null) {
+        System.err.println("[ERROR] Cannot deploy: Mission " + missionId + " not found.");
+        return false;
+    }
+    
+    String currentStatus = m.getStatus();
+    if (currentStatus.equals("POSTED")) {
+        System.out.println(" [!] Mission " + missionId + " is already POSTED.");
+        return true;
+    }
+    
+    if (!currentStatus.equals("PENDING") && !currentStatus.equals("UNPOSTED")) {
+        System.err.println("[ERROR] Cannot deploy mission in status: " + currentStatus);
+        return false;
+    }
+    
+    String sql = "UPDATE missions SET status = 'POSTED', posted_date = ? WHERE id = ?";
+    try (PreparedStatement ps = CONN.prepareStatement(sql)) {
+        ps.setString(1, java.time.LocalDate.now().toString());
+        ps.setString(2, missionId.toUpperCase().trim());
+        return ps.executeUpdate() > 0;
+    } catch (SQLException e) {
+        System.err.println("[ERROR] Deploying mission: " + e.getMessage());
+        return false;
+    }
+}
+    
+    
+    
     // ══════════════════════════════════════════════════════════════
     //  ROOM REQUEST QUERIES
     // ══════════════════════════════════════════════════════════════
@@ -941,4 +974,3 @@ public class GuildDatabase {
         }
     }
 }
-
