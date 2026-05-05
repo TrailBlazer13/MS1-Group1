@@ -34,4 +34,3 @@ public class ApplicationService {
         return DB.updateApplicationStatus(id, "REJECTED");
     }
 }
-
