@@ -122,7 +122,7 @@ public class SafePaymentHandler {
             System.out.printf( " [PAY] Discount  : %.1f%%%n", payment.getDiscountRate() * 100);
  
             double afterDiscount = baseCost * (1 - payment.getDiscountRate());
-            double finalAmount   = afterDiscount * 1.12;
+            double finalAmount = afterDiscount;  
             System.out.printf( " [PAY] Total Due (after discount + VAT): %.2f gp%n", finalAmount);
  
             PaymentInputHandler inputHandler = new PaymentInputHandler(scanner);
@@ -211,8 +211,7 @@ public class SafePaymentHandler {
                 return null;
             }
  
-            // NO discount — full reward always
-            double finalAmount = reward * 1.12;
+            double finalAmount = reward; T
  
             System.out.println("\n ----------------------------------------");
             System.out.println(" [PAY] Mission Reward Prepayment");
