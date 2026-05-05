@@ -239,98 +239,83 @@ public class Menu {
         pressEnter();
     }
 
-    private void missionRequests() {
-        int choice;
-        do {
-            sectionHeader("MISSION REQUESTS");
-            List<Mission> missions = MSN_SERVICE.getAllMissions();
-            printMissionTableHeader();
-            for (Mission m : missions) {
-                String tag = MSN_SERVICE.isOverdue(m) ? " [OVERDUE]" : "";
-                String t   = m.getTitle().length() > 37
-                    ? m.getTitle().substring(0, 34) + "..."
-                    : m.getTitle();
-                System.out.printf("  %-8s %-38s %-10s %3d%%  %-12s%s%n",
-                    m.getId(), t, m.getStatus(), m.getProgress(), m.getDeadline(), tag);
-            }
-            printDivider();
+// MODIFIED CODE - Menu.java - missionRequests() method
 
-            System.out.println();
-            System.out.println("  1. Post Mission");
-            System.out.println("  2. Unpost Mission");
-            System.out.println("  3. Approve Mission Request");
-            System.out.println("  4. Deny Mission Request");
-            System.out.println("  5. Add New Mission Request");
-            System.out.println("  0. Back");
-            System.out.print("\n  > ");
-            choice = readInt();
-
-            switch (choice) {
-                case 1 -> {
-                    String id = readNonEmpty("  Mission ID to POST: ").toUpperCase().trim();
-                    if (MSN_SERVICE.getMissionById(id) == null) {
-                        System.out.println("  [X] Mission ID '" + id + "' not found.");
-                    } else {
-                        MSN_SERVICE.postMission(id);
-                    }
-                }
-                case 2 -> {
-                    String id = readNonEmpty("  Mission ID to UNPOST: ").toUpperCase().trim();
-                    if (MSN_SERVICE.getMissionById(id) == null) {
-                        System.out.println("  [X] Mission ID '" + id + "' not found.");
-                    } else if (MSN_SERVICE.unpostMission(id)) {
-                        System.out.println("  [OK] Mission " + id + " unposted successfully.");
-                        System.out.println("  [DB] Status updated in database.");
-                    } else {
-                        System.out.println("  [X] Could not unpost. Mission must be in POSTED state.");
-                    }
-                }
-                case 3 -> {
-                    String id = readNonEmpty("  Mission ID to APPROVE: ").toUpperCase().trim();
-                    if (MSN_SERVICE.getMissionById(id) == null) {
-                        System.out.println("  [X] Mission ID '" + id + "' not found.");
-                    } else if (MSN_SERVICE.approveMission(id)) {
-                        System.out.println("  [OK] Mission " + id + " approved!");
-                        System.out.println("  [DB] Status updated in database.");
-                    } else {
-                        System.out.println("  [X] Could not approve. Mission must be in PENDING state.");
-                    }
-                }
-                case 4 -> {
-                    String id = readNonEmpty("  Mission ID to DENY: ").toUpperCase().trim();
-                    if (MSN_SERVICE.getMissionById(id) == null) {
-                        System.out.println("  [X] Mission ID '" + id + "' not found.");
-                    } else if (MSN_SERVICE.denyMission(id)) {
-                        System.out.println("  [X] Mission " + id + " denied.");
-                        System.out.println("  [DB] Status updated in database.");
-                    } else {
-                        System.out.println("  [X] Could not deny. Mission must be in PENDING state.");
-                    }
-                }
-                case 5  -> addNewMissionRequest();
-                case 0  -> {}
-                default -> System.out.println("  [X] Invalid choice.");
-            }
-        } while (choice != 0);
-    }
-
-    private void addNewMissionRequest() {
-        try {
-            System.out.println(" -- Register New Mission Request --");
-            String title    = readNonEmpty(" Mission Title  : ");
-            String deadline = readDate(" Deadline Date");
-            double reward   = readPositiveDouble(" Mission Reward (gold coins)");
-
-            if (MSN_SERVICE.addMission(title, deadline, reward)) {
-                System.out.println(" [OK] Mission request registered successfully!");
-                System.out.println(" [DB] New mission saved to database.");
-            } else {
-                System.out.println(" [X] Failed to register mission. Please try again.");
-            }
-        } catch (Exception e) {
-            System.out.println(" [X] Error registering mission. Returning to menu.");
+private void missionRequests() {
+    int choice;
+    do {
+        sectionHeader("MISSION REQUESTS");
+        List<Mission> missions = MSN_SERVICE.getAllMissions();
+        printMissionTableHeader();
+        for (Mission m : missions) {
+            String tag = MSN_SERVICE.isOverdue(m) ? " [OVERDUE]" : "";
+            String t = m.getTitle().length() > 37 ? m.getTitle().substring(0, 34) + "..." : m.getTitle();
+            System.out.printf("%-8s %-38s %-10s %3d%% %-12s%s\n", 
+                m.getId(), t, m.getStatus(), m.getProgress(), m.getDeadline(), tag);
         }
+        printDivider();
+        
+        System.out.println(" 1. Deploy Mission");
+        System.out.println(" 2. Add New Mission Request");
+        System.out.println(" 3. Deny Mission Request");
+        System.out.println(" 0. Back");
+        System.out.print("\n > ");
+        choice = readInt();
+        
+        switch (choice) {
+            case 1 -> {
+                String id = readNonEmpty(" Mission ID to DEPLOY: ").toUpperCase().trim();
+                Mission m = MSN_SERVICE.getMissionById(id);
+                if (m == null) {
+                    System.out.println(" [X] Mission ID " + id + " not found.");
+                } else if (!m.getStatus().equals("PENDING") && !m.getStatus().equals("UNPOSTED")) {
+                    System.out.println(" [X] Mission " + id + " cannot be deployed.");
+                    System.out.println("     Current status: " + m.getStatus());
+                    System.out.println("     Mission must be PENDING or UNPOSTED to deploy.");
+                } else if (MSN_SERVICE.deployMission(id)) {
+                    System.out.println(" [OK] Mission " + id + " DEPLOYED!");
+                    System.out.println(" [OK] Status set to: POSTED");
+                    System.out.println(" [DB] Mission is now available for adventurer assignment.");
+                } else {
+                    System.out.println(" [X] Deployment failed. Check payment or try again.");
+                }
+            }
+            case 2 -> addNewMissionRequest();
+            case 3 -> {
+                String id = readNonEmpty(" Mission ID to DENY: ").toUpperCase().trim();
+                if (MSN_SERVICE.getMissionById(id) == null) {
+                    System.out.println(" [X] Mission ID " + id + " not found.");
+                } else if (MSN_SERVICE.denyMission(id)) {
+                    System.out.println(" [X] Mission " + id + " DENIED.");
+                    System.out.println(" [DB] Status updated in database.");
+                } else {
+                    System.out.println(" [X] Could not deny. Mission must be in PENDING state.");
+                }
+            }
+            case 0 -> {}
+            default -> System.out.println(" [X] Invalid choice.");
+        }
+    } while (choice != 0);
+}  // <-- THIS CLOSES missionRequests() method
+
+// ADD THIS METHOD AFTER THE CLOSING BRACE (outside missionRequests)
+private void addNewMissionRequest() {
+    try {
+        System.out.println(" -- Register New Mission Request --");
+        String title    = readNonEmpty(" Mission Title  : ");
+        String deadline = readDate(" Deadline Date");
+        double reward   = readPositiveDouble(" Mission Reward (gold coins)");
+
+        if (MSN_SERVICE.addMission(title, deadline, reward)) {
+            System.out.println(" [OK] Mission request registered successfully!");
+            System.out.println(" [DB] New mission saved to database.");
+        } else {
+            System.out.println(" [X] Failed to register mission. Please try again.");
+        }
+    } catch (Exception e) {
+        System.out.println(" [X] Error registering mission. Returning to menu.");
     }
+}
 
     private void missionStatus() {
         int choice;
@@ -481,7 +466,7 @@ public class Menu {
                 found = true;
             }
         }
-        if (!found) {in
+        if (!found) {
             System.out.println("  No overdue missions. The guild is on schedule!");
         }
         printDivider();
