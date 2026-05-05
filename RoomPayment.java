@@ -1,14 +1,10 @@
+
 package services;
  
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
- 
-/**
- * RoomPayment — concrete PaymentFramework for room reservation fees.
- * Extends the professor's PaymentFramework without modifying it.
- * Nightly rates: Common Quarters 20 | Private Chamber 50 | Noble Suite 120
- */
-public class RoomPayment extends PaymentFramework {  // MODIFIED CODE
+
+public class RoomPayment extends PaymentFramework {
  
     private static final double RATE_COMMON  = 20.00;
     private static final double RATE_PRIVATE = 50.00;
@@ -18,11 +14,11 @@ public class RoomPayment extends PaymentFramework {  // MODIFIED CODE
         super(creditAmount, validPaymentMethod, discountRate);
     }
  
-    public static RoomPayment defaultPayment() {
-        return new RoomPayment(9999.99, true, 0.0);
+    // NEW CODE — exposes protected field from PaymentFramework without modifying it
+    public double getDiscountRate() {
+        return discountRate;
     }
  
-    // NEW CODE — static cost calculator (safe, no crash on bad dates)
     public static double calculateStayCost(String roomType, String checkIn, String checkOut) {
         try {
             if (roomType == null || checkIn == null || checkOut == null) return RATE_COMMON;
@@ -39,7 +35,7 @@ public class RoomPayment extends PaymentFramework {  // MODIFIED CODE
             return nightly * nights;
         } catch (Exception e) {
             System.err.println("[ERROR] Could not calculate stay cost: " + e.getMessage());
-            return RATE_COMMON; // safe fallback
+            return RATE_COMMON;
         }
     }
  
