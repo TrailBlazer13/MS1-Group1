@@ -140,10 +140,10 @@ public class PaymentInputHandler {
                               String description, double originalAmount,
                               double discountRate, double amountTendered,
                               String date) {
-        double discountAmt  = originalAmount * discountRate;
+        double discountAmt = originalAmount * discountRate;
         double afterDiscount = originalAmount - discountAmt;
-        double vatAmt        = afterDiscount * 0.12;
-        double finalAmount   = afterDiscount + vatAmt;
+        double finalAmount = afterDiscount;
+        double vatAmt = finalAmount * (12.0 / 112.0);
         double change        = amountTendered - finalAmount;
  
         System.out.println("\n ╔══════════════════════════════════════════════════════════╗");
