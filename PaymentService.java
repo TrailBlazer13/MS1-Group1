@@ -15,4 +15,3 @@ public class PaymentService {
         return DB.getPaymentsByCategory(category);
     }
 }
-
